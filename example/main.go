@@ -9,11 +9,11 @@ import (
 	"syscall"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/k-yomo/pm"
-	"github.com/k-yomo/pm/middleware/logging/pm_zap"
-	"github.com/k-yomo/pm/middleware/pm_attributes"
-	"github.com/k-yomo/pm/middleware/pm_autoack"
-	"github.com/k-yomo/pm/middleware/pm_recovery"
+	"github.com/zero-color/pm"
+	"github.com/zero-color/pm/middleware/logging/pm_zap"
+	"github.com/zero-color/pm/middleware/pm_attributes"
+	"github.com/zero-color/pm/middleware/pm_autoack"
+	"github.com/zero-color/pm/middleware/pm_recovery"
 	"go.uber.org/zap"
 )
 

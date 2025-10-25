@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/k-yomo/pm"
+	"github.com/zero-color/pm"
 )
 
 // SubscriptionInterceptor automatically ack / nack subscription based on the returned error.

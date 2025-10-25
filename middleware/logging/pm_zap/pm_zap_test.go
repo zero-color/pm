@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/k-yomo/pm"
+	"github.com/zero-color/pm"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 )

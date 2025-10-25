@@ -7,9 +7,9 @@ import (
 
 	"cloud.google.com/go/pubsub/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus/ctxlogrus"
-	"github.com/k-yomo/pm"
-	pm_logging "github.com/k-yomo/pm/middleware/logging"
 	"github.com/sirupsen/logrus"
+	"github.com/zero-color/pm"
+	pm_logging "github.com/zero-color/pm/middleware/logging"
 )
 
 // SubscriptionInterceptor returns a subscription interceptor that optionally logs the subscription process.

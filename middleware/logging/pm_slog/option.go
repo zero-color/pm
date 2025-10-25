@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	pm_logging "github.com/k-yomo/pm/middleware/logging"
+	pm_logging "github.com/zero-color/pm/middleware/logging"
 )
 
 type options struct {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/k-yomo/pm"
+	"github.com/zero-color/pm"
 )
 
 func TestWithLogDecider(t *testing.T) {

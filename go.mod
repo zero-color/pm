@@ -1,4 +1,4 @@
-module github.com/k-yomo/pm
+module github.com/zero-color/pm
 
 go 1.24.0
 
