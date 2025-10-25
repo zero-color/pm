@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/k-yomo/pm"
+	"github.com/zero-color/pm"
 )
 
 // RecoveryHandlerFunc is a function that recovers from the panic `p`.

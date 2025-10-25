@@ -4,8 +4,8 @@
 //
 //	import (
 //		"log/slog"
-//		"github.com/k-yomo/pm"
-//		"github.com/k-yomo/pm/middleware/logging/pm_slog"
+//		"github.com/zero-color/pm"
+//		"github.com/zero-color/pm/middleware/logging/pm_slog"
 //	)
 //
 //	logger := slog.Default()
@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/k-yomo/pm"
-	pm_logging "github.com/k-yomo/pm/middleware/logging"
+	"github.com/zero-color/pm"
+	pm_logging "github.com/zero-color/pm/middleware/logging"
 )
 
 type ctxLoggerMarker struct{}

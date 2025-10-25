@@ -1,16 +1,16 @@
 # pm
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Test Workflow](https://github.com/k-yomo/pm/workflows/Test/badge.svg)
-[![codecov](https://codecov.io/gh/k-yomo/pm/branch/main/graph/badge.svg)](https://codecov.io/gh/k-yomo/pm)
-[![Go Report Card](https://goreportcard.com/badge/k-yomo/pm)](https://goreportcard.com/report/k-yomo/pm)
+![Test Workflow](https://github.com/zero-color/pm/workflows/Test/badge.svg)
+[![codecov](https://codecov.io/gh/zero-color/pm/branch/main/graph/badge.svg)](https://codecov.io/gh/zero-color/pm)
+[![Go Report Card](https://goreportcard.com/badge/zero-color/pm)](https://goreportcard.com/report/zero-color/pm)
 
 pm is a thin Cloud Pub/Sub client wrapper which lets you manage publishing / subscribing with pluggable middleware.
 
 ## Installation
 
 ```sh
-go get -u github.com/k-yomo/pm
+go get -u github.com/zero-color/pm
 ```
 
 ## Example
@@ -28,11 +28,11 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/k-yomo/pm"
-	"github.com/k-yomo/pm/middleware/logging/pm_zap"
-	"github.com/k-yomo/pm/middleware/pm_attributes"
-	"github.com/k-yomo/pm/middleware/pm_autoack"
-	"github.com/k-yomo/pm/middleware/pm_recovery"
+	"github.com/zero-color/pm"
+	"github.com/zero-color/pm/middleware/logging/pm_zap"
+	"github.com/zero-color/pm/middleware/pm_attributes"
+	"github.com/zero-color/pm/middleware/pm_autoack"
+	"github.com/zero-color/pm/middleware/pm_recovery"
 	"go.uber.org/zap"
 )
 
@@ -132,18 +132,18 @@ pm comes equipped with an optional middleware packages named `pm_*`.
 
 | interceptor                                                                                                | description                                                              |
 |------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [Attributes](https://pkg.go.dev/github.com/k-yomo/pm/middleware/pm_attributes#PublishInterceptor)          | Set custom attributes to all outgoing messages when publish              |
+| [Attributes](https://pkg.go.dev/github.com/zero-color/pm/middleware/pm_attributes#PublishInterceptor)          | Set custom attributes to all outgoing messages when publish              |
 
 #### Subscription interceptor
 
 | interceptor                                                                                                        | description                                                              |
 |--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [Auto Ack](https://pkg.go.dev/github.com/k-yomo/pm/middleware/pm_autoack#SubscriptionInterceptor)                 | Ack automatically depending on if error is returned when subscribe       |
-| [Effectively Once](https://pkg.go.dev/github.com/k-yomo/pm/middleware/pm_effectively_once#SubscriptionInterceptor)| De-duplicate messages with the same de-duplicate key                     |
-| [Logging - Zap](https://pkg.go.dev/github.com/k-yomo/pm/middleware/logging/pm_zap#SubscriptionInterceptor)        | Emit an informative zap log when subscription processing finish          |
-| [Logging - Logrus](https://pkg.go.dev/github.com/k-yomo/pm/middleware/logging/pm_logrus#SubscriptionInterceptor) | Emit an informative logrus log when subscription processing finish       |
-| [Logging - Slog](https://pkg.go.dev/github.com/k-yomo/pm/middleware/logging/pm_slog#SubscriptionInterceptor)     | Emit an informative slog log when subscription processing finish         |
-| [Recovery](https://pkg.go.dev/github.com/k-yomo/pm/middleware#SubscriptionInterceptor)                | Gracefully recover from panics and prints the stack trace when subscribe |
+| [Auto Ack](https://pkg.go.dev/github.com/zero-color/pm/middleware/pm_autoack#SubscriptionInterceptor)                 | Ack automatically depending on if error is returned when subscribe       |
+| [Effectively Once](https://pkg.go.dev/github.com/zero-color/pm/middleware/pm_effectively_once#SubscriptionInterceptor)| De-duplicate messages with the same de-duplicate key                     |
+| [Logging - Zap](https://pkg.go.dev/github.com/zero-color/pm/middleware/logging/pm_zap#SubscriptionInterceptor)        | Emit an informative zap log when subscription processing finish          |
+| [Logging - Logrus](https://pkg.go.dev/github.com/zero-color/pm/middleware/logging/pm_logrus#SubscriptionInterceptor) | Emit an informative logrus log when subscription processing finish       |
+| [Logging - Slog](https://pkg.go.dev/github.com/zero-color/pm/middleware/logging/pm_slog#SubscriptionInterceptor)     | Emit an informative slog log when subscription processing finish         |
+| [Recovery](https://pkg.go.dev/github.com/zero-color/pm/middleware#SubscriptionInterceptor)                | Gracefully recover from panics and prints the stack trace when subscribe |
 
 #### Custom Middleware
 

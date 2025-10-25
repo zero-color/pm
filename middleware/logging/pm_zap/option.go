@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	pm_logging "github.com/k-yomo/pm/middleware/logging"
+	pm_logging "github.com/zero-color/pm/middleware/logging"
 	"go.uber.org/zap"
 )
 

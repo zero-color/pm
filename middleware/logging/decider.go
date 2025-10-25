@@ -1,6 +1,6 @@
 package pm_logging
 
-import "github.com/k-yomo/pm"
+import "github.com/zero-color/pm"
 
 // LogDecider function defines rules for suppressing any interceptor logs
 type LogDecider func(info *pm.SubscriptionInfo, err error) bool

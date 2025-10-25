@@ -7,8 +7,8 @@ import (
 
 	"cloud.google.com/go/pubsub/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/k-yomo/pm"
-	pm_logging "github.com/k-yomo/pm/middleware/logging"
+	"github.com/zero-color/pm"
+	pm_logging "github.com/zero-color/pm/middleware/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

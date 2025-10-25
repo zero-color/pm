@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/k-yomo/pm"
+	"github.com/zero-color/pm"
 )
 
 type Mutexer interface {
@@ -21,6 +21,7 @@ type Mutexer interface {
 //
 // // subscriber
 // pubsubSubscriber := pm.NewSubscriber(
+//
 //		pubsubClient,
 //		pm.WithSubscriptionInterceptor(
 //			pm_effectively_once.SubscriptionInterceptor(pm_effectively_once.NewRedisMutexer(redisClient)),
