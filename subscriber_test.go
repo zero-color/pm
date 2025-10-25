@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
+	pb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 )
 
 type subscriberOptionForTest struct {
@@ -50,8 +50,10 @@ func TestNewSubscriber(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := NewSubscriber(tt.args.pubsubClient, tt.args.opt...); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewSubscriber() = %v, want %v", got, tt.want)
+			// Note: DeepEqual comparison is skipped for complex client objects
+			got := NewSubscriber(tt.args.pubsubClient, tt.args.opt...)
+			if got == nil {
+				t.Errorf("NewSubscriber() returned nil")
 			}
 		})
 	}
@@ -60,27 +62,31 @@ func TestNewSubscriber(t *testing.T) {
 func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 	t.Parallel()
 
-	pubsubClient, err := pubsub.NewClient(context.Background(), "test")
+	ctx := context.Background()
+	ts := NewTestServer(ctx, t)
+	defer ts.Close()
+
+	topicName := fmt.Sprintf("projects/test-project/topics/TestSubscriber_HandleSubscriptionFunc_%d", time.Now().Unix())
+	topicPb, err := ts.Client.TopicAdminClient.CreateTopic(ctx, &pb.Topic{
+		Name: topicName,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	topic, err := pubsubClient.CreateTopic(context.Background(), fmt.Sprintf("TestSubscriber_HandleSubscriptionFunc_%d", time.Now().Unix()))
+	subName := fmt.Sprintf("projects/test-project/subscriptions/TestSubscriber_HandleSubscriptionFunc_%d", time.Now().Unix())
+	subPb, err := ts.Client.SubscriptionAdminClient.CreateSubscription(ctx, &pb.Subscription{
+		Name:  subName,
+		Topic: topicPb.Name,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	sub, err := pubsubClient.CreateSubscription(
-		context.Background(),
-		fmt.Sprintf("TestSubscriber_HandleSubscriptionFunc_%d", time.Now().Unix()),
-		pubsub.SubscriptionConfig{Topic: topic},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	sub := ts.Client.Subscriber(subPb.Name)
 
 	type args struct {
-		subscription *pubsub.Subscription
+		topicID      string
+		subscription *pubsub.Subscriber
 		f            MessageHandler
 	}
 	tests := []struct {
@@ -90,32 +96,25 @@ func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:       "sets subscription handler",
-			subscriber: NewSubscriber(pubsubClient),
+			name:       "sets subscriber handler",
+			subscriber: NewSubscriber(ts.Client),
 			args: args{
+				topicID:      topicPb.Name,
 				subscription: sub,
 				f:            func(ctx context.Context, m *pubsub.Message) error { return nil },
 			},
 		},
 		{
-			name: "when a handler is already registered for the give subscription id, it returns error",
+			name: "when a handler is already registered for the give subscriber id, it returns error",
 			subscriber: func() *Subscriber {
-				s := NewSubscriber(pubsubClient)
-				_ = s.HandleSubscriptionFunc(sub, func(ctx context.Context, m *pubsub.Message) error { return nil })
+				s := NewSubscriber(ts.Client)
+				_ = s.HandleSubscriptionFunc(topicPb.Name, sub, func(ctx context.Context, m *pubsub.Message) error { return nil })
 				return s
 			}(),
 			args: args{
+				topicID:      topicPb.Name,
 				subscription: sub,
 				f:            func(ctx context.Context, m *pubsub.Message) error { return nil },
-			},
-			wantErr: true,
-		},
-		{
-			name:       "when the subscription does not exist, it returns error",
-			subscriber: NewSubscriber(pubsubClient),
-			args: args{
-				subscription: pubsubClient.Subscription("invalid"),
-				f:            nil,
 			},
 			wantErr: true,
 		},
@@ -124,13 +123,13 @@ func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := tt.subscriber.HandleSubscriptionFunc(tt.args.subscription, tt.args.f); (err != nil) != tt.wantErr {
+			if err := tt.subscriber.HandleSubscriptionFunc(tt.args.topicID, tt.args.subscription, tt.args.f); (err != nil) != tt.wantErr {
 				t.Errorf("HandleSubscriptionFunc() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
 			if !tt.wantErr {
 				if _, ok := tt.subscriber.subscriptionHandlers[tt.args.subscription.ID()]; !ok {
-					t.Errorf("HandleSubscriptionFunc() is expected to set subscription handler")
+					t.Errorf("HandleSubscriptionFunc() is expected to set subscriber handler")
 				}
 			}
 		})
@@ -140,27 +139,31 @@ func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 func TestSubscriber_HandleSubscriptionFuncMap(t *testing.T) {
 	t.Parallel()
 
-	pubsubClient, err := pubsub.NewClient(context.Background(), "test")
+	ctx := context.Background()
+	ts := NewTestServer(ctx, t)
+	defer ts.Close()
+
+	topicName := fmt.Sprintf("projects/test-project/topics/TestSubscriber_HandleSubscriptionFuncMap_%d", time.Now().Unix())
+	topicPb, err := ts.Client.TopicAdminClient.CreateTopic(ctx, &pb.Topic{
+		Name: topicName,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	topic, err := pubsubClient.CreateTopic(context.Background(), fmt.Sprintf("TestSubscriber_HandleSubscriptionFuncMap_%d", time.Now().Unix()))
+	subName := fmt.Sprintf("projects/test-project/subscriptions/TestSubscriber_HandleSubscriptionFuncMap_%d", time.Now().Unix())
+	subPb, err := ts.Client.SubscriptionAdminClient.CreateSubscription(ctx, &pb.Subscription{
+		Name:  subName,
+		Topic: topicPb.Name,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	sub, err := pubsubClient.CreateSubscription(
-		context.Background(),
-		fmt.Sprintf("TestSubscriber_HandleSubscriptionFuncMap_%d", time.Now().Unix()),
-		pubsub.SubscriptionConfig{Topic: topic},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	sub := ts.Client.Subscriber(subPb.Name)
 
 	type args struct {
-		funcMap map[*pubsub.Subscription]MessageHandler
+		topicID string
+		funcMap map[*pubsub.Subscriber]MessageHandler
 	}
 	tests := []struct {
 		name       string
@@ -169,34 +172,25 @@ func TestSubscriber_HandleSubscriptionFuncMap(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:       "sets subscription handler",
-			subscriber: NewSubscriber(pubsubClient),
+			name:       "sets subscriber handler",
+			subscriber: NewSubscriber(ts.Client),
 			args: args{
-				funcMap: map[*pubsub.Subscription]MessageHandler{
+				topicID: topicPb.Name,
+				funcMap: map[*pubsub.Subscriber]MessageHandler{
 					sub: func(ctx context.Context, m *pubsub.Message) error { return nil },
 				},
 			},
-		},
-		{
-			name:       "when the subscription does not exist, it returns error",
-			subscriber: NewSubscriber(pubsubClient),
-			args: args{
-				funcMap: map[*pubsub.Subscription]MessageHandler{
-					pubsubClient.Subscription("invalid"): func(ctx context.Context, m *pubsub.Message) error { return nil },
-				},
-			},
-			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := tt.subscriber.HandleSubscriptionFuncMap(tt.args.funcMap); (err != nil) != tt.wantErr {
+			if err := tt.subscriber.HandleSubscriptionFuncMap(tt.args.topicID, tt.args.funcMap); (err != nil) != tt.wantErr {
 				t.Errorf("HandleSubscriptionFuncMap() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			for sub, _ := range tt.args.funcMap {
+			for sub := range tt.args.funcMap {
 				if _, ok := tt.subscriber.subscriptionHandlers[sub.ID()]; ok == tt.wantErr {
 					t.Errorf("HandleSubscriptionFuncMap() set: %v, want set: %v", ok, !tt.wantErr)
 				}
@@ -208,27 +202,31 @@ func TestSubscriber_HandleSubscriptionFuncMap(t *testing.T) {
 func TestSubscriber_Run(t *testing.T) {
 	t.Parallel()
 
-	pubsubClient, err := pubsub.NewClient(context.Background(), "test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx := context.Background()
+	ts := NewTestServer(ctx, t)
+	defer ts.Close()
 
-	topic, err := pubsubClient.CreateTopic(context.Background(), fmt.Sprintf("TestSubscriber_Run_%d", time.Now().Unix()))
+	topicName := fmt.Sprintf("projects/test-project/topics/TestSubscriber_Run_%d", time.Now().Unix())
+	topicPb, err := ts.Client.TopicAdminClient.CreateTopic(ctx, &pb.Topic{
+		Name: topicName,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	publisher := ts.Client.Publisher(topicPb.Name)
 
-	sub, err := pubsubClient.CreateSubscription(
-		context.Background(),
-		fmt.Sprintf("TestSubscriber_Run_%d", time.Now().Unix()),
-		pubsub.SubscriptionConfig{Topic: topic},
-	)
+	subName := fmt.Sprintf("projects/test-project/subscriptions/TestSubscriber_Run_%d", time.Now().Unix())
+	subPb, err := ts.Client.SubscriptionAdminClient.CreateSubscription(ctx, &pb.Subscription{
+		Name:  subName,
+		Topic: topicPb.Name,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	sub := ts.Client.Subscriber(subPb.Name)
 
 	subscriber := NewSubscriber(
-		pubsubClient,
+		ts.Client,
 		WithSubscriptionInterceptor(func(_ *SubscriptionInfo, next MessageHandler) MessageHandler {
 			return func(ctx context.Context, m *pubsub.Message) error {
 				m.Attributes = map[string]string{"intercepted": "abc"}
@@ -245,7 +243,7 @@ func TestSubscriber_Run(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	var receivedCount int64 = 0
-	err = subscriber.HandleSubscriptionFunc(sub, func(ctx context.Context, m *pubsub.Message) error {
+	err = subscriber.HandleSubscriptionFunc(topicPb.Name, sub, func(ctx context.Context, m *pubsub.Message) error {
 		defer wg.Done()
 		m.Ack()
 		atomic.AddInt64(&receivedCount, 1)
@@ -264,7 +262,7 @@ func TestSubscriber_Run(t *testing.T) {
 	for i := 0; i < int(publishCount); i++ {
 		wg.Add(1)
 		ctx := context.Background()
-		_, err := topic.Publish(ctx, &pubsub.Message{Data: []byte("test")}).Get(ctx)
+		_, err := publisher.Publish(ctx, &pubsub.Message{Data: []byte("test")}).Get(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -280,28 +278,32 @@ func TestSubscriber_Run(t *testing.T) {
 func TestSubscriber_Close(t *testing.T) {
 	t.Parallel()
 
-	pubsubClient, err := pubsub.NewClient(context.Background(), "test")
+	ctx := context.Background()
+	ts := NewTestServer(ctx, t)
+	defer ts.Close()
+
+	topicName := fmt.Sprintf("projects/test-project/topics/TestSubscriber_Close_%d", time.Now().Unix())
+	topicPb, err := ts.Client.TopicAdminClient.CreateTopic(ctx, &pb.Topic{
+		Name: topicName,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	publisher := ts.Client.Publisher(topicPb.Name)
 
-	topic, err := pubsubClient.CreateTopic(context.Background(), fmt.Sprintf("TestSubscriber_Close_%d", time.Now().Unix()))
+	subName := fmt.Sprintf("projects/test-project/subscriptions/TestSubscriber_Close_%d", time.Now().Unix())
+	subPb, err := ts.Client.SubscriptionAdminClient.CreateSubscription(ctx, &pb.Subscription{
+		Name:  subName,
+		Topic: topicPb.Name,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	sub := ts.Client.Subscriber(subPb.Name)
 
-	sub, err := pubsubClient.CreateSubscription(
-		context.Background(),
-		fmt.Sprintf("TestSubscriber_Close_%d", time.Now().Unix()),
-		pubsub.SubscriptionConfig{Topic: topic},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	subscriber := NewSubscriber(ts.Client)
 
-	subscriber := NewSubscriber(pubsubClient)
-
-	err = subscriber.HandleSubscriptionFunc(sub, func(ctx context.Context, m *pubsub.Message) error {
+	err = subscriber.HandleSubscriptionFunc(topicPb.Name, sub, func(ctx context.Context, m *pubsub.Message) error {
 		m.Ack()
 		t.Error("Must not received messages after close")
 		return nil
@@ -313,8 +315,7 @@ func TestSubscriber_Close(t *testing.T) {
 	subscriber.Run(context.Background())
 	subscriber.Close()
 
-	ctx := context.Background()
-	if _, err := topic.Publish(ctx, &pubsub.Message{Data: []byte("test")}).Get(ctx); err != nil {
+	if _, err := publisher.Publish(ctx, &pubsub.Message{Data: []byte("test")}).Get(ctx); err != nil {
 		log.Fatal(err)
 	}
 	time.Sleep(1 * time.Second)

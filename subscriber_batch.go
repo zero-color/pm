@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"cloud.google.com/go/pubsub"
-	pb "cloud.google.com/go/pubsub/apiv1/pubsubpb"
+	"cloud.google.com/go/pubsub/v2"
+	pb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"google.golang.org/api/support/bundler"
 	"google.golang.org/protobuf/proto"
 )
@@ -149,6 +149,11 @@ func newBundleHandler(handler MessageBatchHandler) func(bundle interface{}) {
 		if errors.As(err, &batchErr) {
 			for _, bm := range bundledMessages {
 				bm.err <- batchErr[bm.msg.ID]
+			}
+		} else {
+			// For non-BatchError (including nil), send the same error to all messages
+			for _, bm := range bundledMessages {
+				bm.err <- err
 			}
 		}
 	}

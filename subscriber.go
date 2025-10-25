@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -21,7 +21,7 @@ type Subscriber struct {
 
 type subscriptionHandler struct {
 	topicID      string
-	subscription *pubsub.Subscription
+	subscription *pubsub.Subscriber
 	handleFunc   MessageHandler
 }
 
@@ -43,22 +43,17 @@ func NewSubscriber(pubsubClient *pubsub.Client, opt ...SubscriberOption) *Subscr
 }
 
 // HandleSubscriptionFunc registers subscription handler for the given id's subscription.
-// If subscription does not exist, it will return error.
-func (s *Subscriber) HandleSubscriptionFunc(subscription *pubsub.Subscription, f MessageHandler) error {
+// topicID is used for logging and middleware context.
+func (s *Subscriber) HandleSubscriptionFunc(topicID string, subscription *pubsub.Subscriber, f MessageHandler) error {
 	s.mu.RLock()
 	if _, ok := s.subscriptionHandlers[subscription.ID()]; ok {
 		return fmt.Errorf("handler for subscription '%s' is already registered", subscription.ID())
 	}
 	s.mu.RUnlock()
 
-	cfg, err := subscription.Config(context.Background())
-	if err != nil {
-		return err
-	}
-
 	s.mu.Lock()
 	s.subscriptionHandlers[subscription.ID()] = &subscriptionHandler{
-		topicID:      cfg.Topic.ID(),
+		topicID:      topicID,
 		subscription: subscription,
 		handleFunc:   f,
 	}
@@ -68,13 +63,13 @@ func (s *Subscriber) HandleSubscriptionFunc(subscription *pubsub.Subscription, f
 }
 
 // HandleSubscriptionFuncMap registers multiple subscription handlers at once.
-// This function take map of key[subscription id]: value[corresponding message handler] pairs.
-func (s *Subscriber) HandleSubscriptionFuncMap(funcMap map[*pubsub.Subscription]MessageHandler) error {
+// topicID is used for logging and middleware context for all subscriptions.
+func (s *Subscriber) HandleSubscriptionFuncMap(topicID string, funcMap map[*pubsub.Subscriber]MessageHandler) error {
 	eg := errgroup.Group{}
 	for sub, f := range funcMap {
 		sub, f := sub, f
 		eg.Go(func() error {
-			return s.HandleSubscriptionFunc(sub, f)
+			return s.HandleSubscriptionFunc(topicID, sub, f)
 		})
 	}
 	return eg.Wait()
@@ -85,8 +80,7 @@ func (s *Subscriber) Run(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancel = cancel
 
-	for subscriptionID, handler := range s.subscriptionHandlers {
-		sub := s.pubsubClient.Subscription(subscriptionID)
+	for _, handler := range s.subscriptionHandlers {
 		h := handler
 		subscriptionInfo := SubscriptionInfo{
 			TopicID:        h.topicID,
@@ -97,7 +91,7 @@ func (s *Subscriber) Run(ctx context.Context) {
 			for i := len(s.opts.subscriptionInterceptors) - 1; i >= 0; i-- {
 				last = s.opts.subscriptionInterceptors[i](&subscriptionInfo, last)
 			}
-			err := sub.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
+			err := h.subscription.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 				_ = last(ctx, m)
 			})
 			if err != nil {

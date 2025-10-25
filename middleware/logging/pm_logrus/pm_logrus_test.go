@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/k-yomo/pm"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"

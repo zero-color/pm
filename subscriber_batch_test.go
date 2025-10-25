@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"golang.org/x/sync/errgroup"
@@ -43,7 +43,7 @@ func Test_MessageBatchHandler(t *testing.T) {
 		t.Parallel()
 
 		batchConfig := BatchMessageHandlerConfig{
-			DelayThreshold:    10 * time.Millisecond,
+			DelayThreshold:    100 * time.Millisecond,
 			CountThreshold:    2,
 			ByteThreshold:     1e5,
 			NumGoroutines:     1,
@@ -105,7 +105,7 @@ func Test_MessageBatchHandler(t *testing.T) {
 		t.Parallel()
 
 		batchConfig := BatchMessageHandlerConfig{
-			DelayThreshold:    10 * time.Millisecond,
+			DelayThreshold:    100 * time.Millisecond,
 			CountThreshold:    2,
 			ByteThreshold:     DefaultMessageBatchHandlerConfig.ByteThreshold,
 			NumGoroutines:     1,

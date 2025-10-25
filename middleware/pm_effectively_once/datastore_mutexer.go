@@ -2,6 +2,7 @@ package pm_effectively_once
 
 import (
 	"context"
+	"errors"
 
 	"cloud.google.com/go/datastore"
 )
@@ -22,7 +23,7 @@ func (d *datastoreMutexer) RunInTx(ctx context.Context, deduplicateKey string, f
 			// the event already processed
 			return nil
 		} else {
-			if err != datastore.ErrNoSuchEntity {
+			if !errors.Is(err, datastore.ErrNoSuchEntity) {
 				return err
 			}
 		}

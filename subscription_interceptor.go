@@ -1,6 +1,6 @@
 package pm
 
-// SubscriptionInfo contains various info about the subscription.
+// SubscriptionInfo contains various info about the subscriber.
 type SubscriptionInfo struct {
 	TopicID        string
 	SubscriptionID string

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/k-yomo/pm"
 	pm_logging "github.com/k-yomo/pm/middleware/logging"

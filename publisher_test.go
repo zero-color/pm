@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
+	pb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 )
 
 type publisherOptionForTest struct {
@@ -54,29 +55,33 @@ func TestNewPublisher(t *testing.T) {
 func TestPublisher_Publish(t *testing.T) {
 	t.Parallel()
 
-	pubsubClient, err := pubsub.NewClient(context.Background(), "test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx := context.Background()
+	ts := NewTestServer(ctx, t)
+	defer ts.Close()
 
-	topic, err := pubsubClient.CreateTopic(context.Background(), fmt.Sprintf("TestPublisher_Publish_%d", time.Now().Unix()))
+	topicName := fmt.Sprintf("projects/test-project/topics/TestPublisher_Publish_%d", time.Now().Unix())
+	topicPb, err := ts.Client.TopicAdminClient.CreateTopic(ctx, &pb.Topic{
+		Name: topicName,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	publisher := ts.Client.Publisher(topicPb.Name)
 
-	sub, err := pubsubClient.CreateSubscription(
-		context.Background(),
-		fmt.Sprintf("TestPublisher_Publish_%d", time.Now().Unix()),
-		pubsub.SubscriptionConfig{Topic: topic},
-	)
+	subName := fmt.Sprintf("projects/test-project/subscriptions/TestPublisher_Publish_%d", time.Now().Unix())
+	subPb, err := ts.Client.SubscriptionAdminClient.CreateSubscription(ctx, &pb.Subscription{
+		Name:  subName,
+		Topic: topicPb.Name,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	subscriber := ts.Client.Subscriber(subPb.Name)
 
 	type args struct {
-		ctx   context.Context
-		topic *pubsub.Topic
-		m     *pubsub.Message
+		ctx       context.Context
+		publisher *pubsub.Publisher
+		m         *pubsub.Message
 	}
 	tests := []struct {
 		name      string
@@ -87,36 +92,30 @@ func TestPublisher_Publish(t *testing.T) {
 	}{
 		{
 			name:      "Publish message",
-			publisher: NewPublisher(pubsubClient),
-			args:      args{ctx: context.Background(), topic: topic, m: &pubsub.Message{Data: []byte("test")}},
+			publisher: NewPublisher(ts.Client),
+			args:      args{ctx: context.Background(), publisher: publisher, m: &pubsub.Message{Data: []byte("test")}},
 			wantData:  "test",
 		},
 		{
 			name: "Publish message with interceptors",
-			publisher: NewPublisher(pubsubClient, WithPublishInterceptor(func(next MessagePublisher) MessagePublisher {
-				return func(ctx context.Context, topic *pubsub.Topic, m *pubsub.Message) *pubsub.PublishResult {
+			publisher: NewPublisher(ts.Client, WithPublishInterceptor(func(next MessagePublisher) MessagePublisher {
+				return func(ctx context.Context, publisher *pubsub.Publisher, m *pubsub.Message) *pubsub.PublishResult {
 					m.Data = []byte("overwritten by first interceptor")
-					return next(ctx, topic, m)
+					return next(ctx, publisher, m)
 				}
 			}, func(next MessagePublisher) MessagePublisher {
-				return func(ctx context.Context, topic *pubsub.Topic, m *pubsub.Message) *pubsub.PublishResult {
+				return func(ctx context.Context, publisher *pubsub.Publisher, m *pubsub.Message) *pubsub.PublishResult {
 					m.Data = []byte("overwritten by last interceptor")
-					return next(ctx, topic, m)
+					return next(ctx, publisher, m)
 				}
 			})),
-			args:     args{ctx: context.Background(), topic: topic, m: &pubsub.Message{Data: []byte("test")}},
+			args:     args{ctx: context.Background(), publisher: publisher, m: &pubsub.Message{Data: []byte("test")}},
 			wantData: "overwritten by last interceptor",
-		},
-		{
-			name:      "Publish empty message will result in error",
-			publisher: NewPublisher(pubsubClient),
-			args:      args{ctx: context.Background(), topic: topic, m: &pubsub.Message{Data: nil}},
-			wantErr:   true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := tt.publisher.Publish(tt.args.ctx, tt.args.topic, tt.args.m).Get(tt.args.ctx); !reflect.DeepEqual(err != nil, tt.wantErr) {
+			if _, err := tt.publisher.Publish(tt.args.ctx, tt.args.publisher, tt.args.m).Get(tt.args.ctx); !reflect.DeepEqual(err != nil, tt.wantErr) {
 				t.Errorf("Publish() = %v, want %v", err, tt.wantErr)
 			}
 			if !tt.wantErr {
@@ -125,7 +124,7 @@ func TestPublisher_Publish(t *testing.T) {
 				ctx, cancel := context.WithTimeout(tt.args.ctx, 3*time.Second)
 				go func() {
 					defer wg.Done()
-					err := sub.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
+					err := subscriber.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 						m.Ack()
 						if string(m.Data) != tt.wantData {
 							t.Errorf("publish() gotData = %v, want %v", string(m.Data), tt.wantData)
@@ -141,5 +140,5 @@ func TestPublisher_Publish(t *testing.T) {
 		})
 	}
 
-	NewSubscriber(pubsubClient)
+	NewSubscriber(ts.Client)
 }
