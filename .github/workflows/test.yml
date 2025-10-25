@@ -10,10 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      pubsub:
-        image: knarz/pubsub-emulator
-        ports:
-          - 8085:8085
       datastore:
         image: motemen/datastore-emulator
         ports:
