@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/k-yomo/pm"
 )
 
@@ -16,8 +16,7 @@ type testMutexer struct {
 
 func (d *testMutexer) RunInTx(_ context.Context, deduplicateKey string, f func() error) error {
 	d.passedDeduplicateKey = deduplicateKey
-	f()
-	return nil
+	return f()
 }
 
 func TestSubscriptionInterceptor(t *testing.T) {

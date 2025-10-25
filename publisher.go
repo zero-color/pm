@@ -3,12 +3,12 @@ package pm
 import (
 	"context"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 )
 
 // MessagePublisher defines the message publisher invoked by PublishInterceptor to complete the normal
 // message publishment.
-type MessagePublisher = func(ctx context.Context, topic *pubsub.Topic, m *pubsub.Message) *pubsub.PublishResult
+type MessagePublisher = func(ctx context.Context, topic *pubsub.Publisher, m *pubsub.Message) *pubsub.PublishResult
 
 // PublishInterceptor provides a hook to intercept the execution of a publishment.
 type PublishInterceptor = func(next MessagePublisher) MessagePublisher
@@ -32,14 +32,14 @@ func NewPublisher(pubsubClient *pubsub.Client, opt ...PublisherOption) *Publishe
 }
 
 // Publish publishes Pub/Sub message with applying middlewares
-func (p *Publisher) Publish(ctx context.Context, topic *pubsub.Topic, m *pubsub.Message) *pubsub.PublishResult {
+func (p *Publisher) Publish(ctx context.Context, publisher *pubsub.Publisher, m *pubsub.Message) *pubsub.PublishResult {
 	last := publish
 	for i := len(p.opts.publishInterceptors) - 1; i >= 0; i-- {
 		last = p.opts.publishInterceptors[i](last)
 	}
-	return last(ctx, topic, m)
+	return last(ctx, publisher, m)
 }
 
-func publish(ctx context.Context, topic *pubsub.Topic, m *pubsub.Message) *pubsub.PublishResult {
-	return topic.Publish(ctx, m)
+func publish(ctx context.Context, publisher *pubsub.Publisher, m *pubsub.Message) *pubsub.PublishResult {
+	return publisher.Publish(ctx, m)
 }

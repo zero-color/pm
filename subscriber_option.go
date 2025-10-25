@@ -23,7 +23,7 @@ func newSubscriberOptionFunc(f func(*subscriberOptions)) *subscriberOptionFunc {
 	}
 }
 
-// WithSubscriptionInterceptor sets subscription interceptors.
+// WithSubscriptionInterceptor sets subscriber interceptors.
 func WithSubscriptionInterceptor(interceptors ...SubscriptionInterceptor) SubscriberOption {
 	return newSubscriberOptionFunc(func(so *subscriberOptions) {
 		so.subscriptionInterceptors = interceptors

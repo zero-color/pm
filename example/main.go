@@ -7,9 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/k-yomo/pm"
 	"github.com/k-yomo/pm/middleware/logging/pm_zap"
 	"github.com/k-yomo/pm/middleware/pm_attributes"
@@ -44,12 +43,12 @@ func main() {
 	)
 	defer pubsubSubscriber.Close()
 
-	sub := pubsubClient.Subscription("example-topic-sub")
-	batchSub := pubsubClient.Subscription("example-topic-batch-sub")
-	err = pubsubSubscriber.HandleSubscriptionFuncMap(map[*pubsub.Subscription]pm.MessageHandler{
+	sub := pubsubClient.Subscriber("example-topic-sub")
+	batchSub := pubsubClient.Subscriber("example-topic-batch-sub")
+	err = pubsubSubscriber.HandleSubscriptionFuncMap("example-topic", map[*pubsub.Subscriber]pm.MessageHandler{
 		sub: exampleSubscriptionHandler,
 		batchSub: pm.NewBatchMessageHandler(exampleSubscriptionBatchHandler, pm.BatchMessageHandlerConfig{
-			DelayThreshold:    100 * time.Millisecond,
+			DelayThreshold:    100,
 			CountThreshold:    1000,
 			ByteThreshold:     1e6,
 			BufferedByteLimit: 1e8,
@@ -64,7 +63,7 @@ func main() {
 
 	pubsubPublisher.Publish(
 		ctx,
-		pubsubPublisher.Topic("example-topic"),
+		pubsubClient.Publisher("example-topic"),
 		&pubsub.Message{
 			Data: []byte("test"),
 		},

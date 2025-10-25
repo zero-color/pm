@@ -8,31 +8,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Testing
 
-Run the full test suite with emulators:
+Run the full test suite:
 ```bash
 make test
 ```
 
 This command:
-1. Starts Docker containers for Pub/Sub emulator (port 8085), Datastore emulator (port 8081), and Redis (port 6379)
-2. Runs tests with race detection and coverage
-3. Generates both terminal and HTML coverage reports
+1. Runs tests with race detection and coverage
+2. Generates both terminal and HTML coverage reports
 
-Run tests without the Makefile:
+The tests use `pstest` (https://pkg.go.dev/cloud.google.com/go/pubsub/pstest), an in-memory Pub/Sub server for testing. This eliminates the need for Docker containers or external emulators.
+
+Run tests manually:
 ```bash
-docker-compose up -d
-PUBSUB_EMULATOR_HOST=localhost:8085 \
-  DATASTORE_EMULATOR_HOST=localhost:8081 \
-  REDIS_URL=localhost:6379 \
-  go test -v -race -coverprofile=coverage.out ./...
+go test -v -race -coverprofile=coverage.out ./...
 ```
 
 Run a single test:
 ```bash
-PUBSUB_EMULATOR_HOST=localhost:8085 \
-  DATASTORE_EMULATOR_HOST=localhost:8081 \
+go test -v -race -run TestName ./path/to/package
+```
+
+**Note on Middleware Tests**: Some middleware tests (e.g., `pm_effectively_once`) still require Docker containers for Datastore emulator and Redis:
+```bash
+docker-compose up -d
+DATASTORE_EMULATOR_HOST=localhost:8081 \
   REDIS_URL=localhost:6379 \
-  go test -v -race -run TestName ./path/to/package
+  go test -v -race ./middleware/...
 ```
 
 ## Architecture
@@ -100,6 +102,7 @@ Each middleware package typically exports either `PublishInterceptor()` or `Subs
 ## Development Notes
 
 - The library requires Go 1.21 or later
-- Tests depend on emulators (Pub/Sub, Datastore) and Redis running locally
+- Core tests use `pstest` for in-memory Pub/Sub testing (no external dependencies)
+- Middleware tests for `pm_effectively_once` require Datastore emulator and Redis (via Docker)
 - The `pm_effectively_once` middleware requires either Redis, Datastore, or can use in-memory storage for deduplication
 - When writing new middleware, follow the interceptor function signature pattern for type safety
