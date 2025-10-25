@@ -21,31 +21,17 @@ jobs:
         env:
           CLOUDSDK_CORE_PROJECT: test
       redis:
-        image: redis:5.0
+        image: redis:8.0
         ports:
           - 6379:6379
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        id: go
         with:
           go-version-file: 'go.mod'
-        id: go
-
-      - name: Restore Cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Download Modules
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: go mod download
+          cache-dependency-path: 'go.sum'
 
       - name: Test
         run: go test -v -race -coverprofile=coverage.out ./...
