@@ -15,7 +15,6 @@ func TestSubscriptionInterceptor(t *testing.T) {
 	t.Parallel()
 
 	testSubInfo := &pm.SubscriptionInfo{
-		TopicID:        "test-topic",
 		SubscriptionID: "test-sub",
 	}
 

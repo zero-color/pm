@@ -86,7 +86,6 @@ func newLoggerForProcess(ctx context.Context, logger *slog.Logger, info *pm.Subs
 		args = append(args, "pubsub.deadline", d.Format(timestampFormat))
 	}
 	args = append(args,
-		"pubsub.topic_id", info.TopicID,
 		"pubsub.subscription_id", info.SubscriptionID,
 	)
 	return ToContext(ctx, logger.With(args...))

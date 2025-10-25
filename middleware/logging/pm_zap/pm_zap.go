@@ -49,6 +49,6 @@ func newLoggerForProcess(ctx context.Context, logger *zap.Logger, info *pm.Subsc
 	if d, ok := ctx.Deadline(); ok {
 		fields = append(fields, zap.String("pubsub.deadline", d.Format(timestampFormat)))
 	}
-	fields = append(fields, zap.String("pubsub.topic_id", info.TopicID), zap.String("pubsub.subscription_id", info.SubscriptionID))
+	fields = append(fields, zap.String("pubsub.subscription_id", info.SubscriptionID))
 	return ctxzap.ToContext(ctx, logger.With(fields...))
 }

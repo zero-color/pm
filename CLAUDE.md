@@ -76,7 +76,7 @@ type PublishInterceptor = func(next MessagePublisher) MessagePublisher
 type SubscriptionInterceptor = func(info *SubscriptionInfo, next MessageHandler) MessageHandler
 ```
 - Wraps the message handler function
-- Receives `SubscriptionInfo` (TopicID, SubscriptionID) for context
+- Receives `SubscriptionInfo` (SubscriptionID) for context
 - Applied in reverse order, so the first interceptor registered is the outermost layer
 
 ### Middleware Organization

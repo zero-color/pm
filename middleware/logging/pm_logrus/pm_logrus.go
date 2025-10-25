@@ -49,7 +49,6 @@ func newLoggerForProcess(ctx context.Context, entry *logrus.Entry, info *pm.Subs
 	if d, ok := ctx.Deadline(); ok {
 		fields["pubsub.deadline"] = d.Format(timestampFormat)
 	}
-	fields["pubsub.topic_id"] = info.TopicID
 	fields["pubsub.subscription_id"] = info.SubscriptionID
 	return ctxlogrus.ToContext(ctx, entry.WithFields(fields))
 }

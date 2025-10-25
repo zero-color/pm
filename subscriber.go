@@ -20,7 +20,6 @@ type Subscriber struct {
 }
 
 type subscriptionHandler struct {
-	topicID      string
 	subscription *pubsub.Subscriber
 	handleFunc   MessageHandler
 }
@@ -43,8 +42,7 @@ func NewSubscriber(pubsubClient *pubsub.Client, opt ...SubscriberOption) *Subscr
 }
 
 // HandleSubscriptionFunc registers subscription handler for the given id's subscription.
-// topicID is used for logging and middleware context.
-func (s *Subscriber) HandleSubscriptionFunc(topicID string, subscription *pubsub.Subscriber, f MessageHandler) error {
+func (s *Subscriber) HandleSubscriptionFunc(subscription *pubsub.Subscriber, f MessageHandler) error {
 	s.mu.RLock()
 	if _, ok := s.subscriptionHandlers[subscription.ID()]; ok {
 		return fmt.Errorf("handler for subscription '%s' is already registered", subscription.ID())
@@ -53,7 +51,6 @@ func (s *Subscriber) HandleSubscriptionFunc(topicID string, subscription *pubsub
 
 	s.mu.Lock()
 	s.subscriptionHandlers[subscription.ID()] = &subscriptionHandler{
-		topicID:      topicID,
 		subscription: subscription,
 		handleFunc:   f,
 	}
@@ -63,13 +60,12 @@ func (s *Subscriber) HandleSubscriptionFunc(topicID string, subscription *pubsub
 }
 
 // HandleSubscriptionFuncMap registers multiple subscription handlers at once.
-// topicID is used for logging and middleware context for all subscriptions.
-func (s *Subscriber) HandleSubscriptionFuncMap(topicID string, funcMap map[*pubsub.Subscriber]MessageHandler) error {
+func (s *Subscriber) HandleSubscriptionFuncMap(funcMap map[*pubsub.Subscriber]MessageHandler) error {
 	eg := errgroup.Group{}
 	for sub, f := range funcMap {
 		sub, f := sub, f
 		eg.Go(func() error {
-			return s.HandleSubscriptionFunc(topicID, sub, f)
+			return s.HandleSubscriptionFunc(sub, f)
 		})
 	}
 	return eg.Wait()
@@ -83,7 +79,6 @@ func (s *Subscriber) Run(ctx context.Context) {
 	for _, handler := range s.subscriptionHandlers {
 		h := handler
 		subscriptionInfo := SubscriptionInfo{
-			TopicID:        h.topicID,
 			SubscriptionID: h.subscription.ID(),
 		}
 		go func() {

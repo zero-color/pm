@@ -85,7 +85,6 @@ func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 	sub := ts.Client.Subscriber(subPb.Name)
 
 	type args struct {
-		topicID      string
 		subscription *pubsub.Subscriber
 		f            MessageHandler
 	}
@@ -99,7 +98,6 @@ func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 			name:       "sets subscriber handler",
 			subscriber: NewSubscriber(ts.Client),
 			args: args{
-				topicID:      topicPb.Name,
 				subscription: sub,
 				f:            func(ctx context.Context, m *pubsub.Message) error { return nil },
 			},
@@ -108,11 +106,10 @@ func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 			name: "when a handler is already registered for the give subscriber id, it returns error",
 			subscriber: func() *Subscriber {
 				s := NewSubscriber(ts.Client)
-				_ = s.HandleSubscriptionFunc(topicPb.Name, sub, func(ctx context.Context, m *pubsub.Message) error { return nil })
+				_ = s.HandleSubscriptionFunc(sub, func(ctx context.Context, m *pubsub.Message) error { return nil })
 				return s
 			}(),
 			args: args{
-				topicID:      topicPb.Name,
 				subscription: sub,
 				f:            func(ctx context.Context, m *pubsub.Message) error { return nil },
 			},
@@ -123,7 +120,7 @@ func TestSubscriber_HandleSubscriptionFunc(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := tt.subscriber.HandleSubscriptionFunc(tt.args.topicID, tt.args.subscription, tt.args.f); (err != nil) != tt.wantErr {
+			if err := tt.subscriber.HandleSubscriptionFunc(tt.args.subscription, tt.args.f); (err != nil) != tt.wantErr {
 				t.Errorf("HandleSubscriptionFunc() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
@@ -162,7 +159,6 @@ func TestSubscriber_HandleSubscriptionFuncMap(t *testing.T) {
 	sub := ts.Client.Subscriber(subPb.Name)
 
 	type args struct {
-		topicID string
 		funcMap map[*pubsub.Subscriber]MessageHandler
 	}
 	tests := []struct {
@@ -175,7 +171,6 @@ func TestSubscriber_HandleSubscriptionFuncMap(t *testing.T) {
 			name:       "sets subscriber handler",
 			subscriber: NewSubscriber(ts.Client),
 			args: args{
-				topicID: topicPb.Name,
 				funcMap: map[*pubsub.Subscriber]MessageHandler{
 					sub: func(ctx context.Context, m *pubsub.Message) error { return nil },
 				},
@@ -186,7 +181,7 @@ func TestSubscriber_HandleSubscriptionFuncMap(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := tt.subscriber.HandleSubscriptionFuncMap(tt.args.topicID, tt.args.funcMap); (err != nil) != tt.wantErr {
+			if err := tt.subscriber.HandleSubscriptionFuncMap(tt.args.funcMap); (err != nil) != tt.wantErr {
 				t.Errorf("HandleSubscriptionFuncMap() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
@@ -243,7 +238,7 @@ func TestSubscriber_Run(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	var receivedCount int64 = 0
-	err = subscriber.HandleSubscriptionFunc(topicPb.Name, sub, func(ctx context.Context, m *pubsub.Message) error {
+	err = subscriber.HandleSubscriptionFunc(sub, func(ctx context.Context, m *pubsub.Message) error {
 		defer wg.Done()
 		m.Ack()
 		atomic.AddInt64(&receivedCount, 1)
@@ -303,7 +298,7 @@ func TestSubscriber_Close(t *testing.T) {
 
 	subscriber := NewSubscriber(ts.Client)
 
-	err = subscriber.HandleSubscriptionFunc(topicPb.Name, sub, func(ctx context.Context, m *pubsub.Message) error {
+	err = subscriber.HandleSubscriptionFunc(sub, func(ctx context.Context, m *pubsub.Message) error {
 		m.Ack()
 		t.Error("Must not received messages after close")
 		return nil
