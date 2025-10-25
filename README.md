@@ -142,6 +142,7 @@ pm comes equipped with an optional middleware packages named `pm_*`.
 | [Effectively Once](https://pkg.go.dev/github.com/k-yomo/pm/middleware/pm_effectively_once#SubscriptionInterceptor)| De-duplicate messages with the same de-duplicate key                     |
 | [Logging - Zap](https://pkg.go.dev/github.com/k-yomo/pm/middleware/logging/pm_zap#SubscriptionInterceptor)        | Emit an informative zap log when subscription processing finish          |
 | [Logging - Logrus](https://pkg.go.dev/github.com/k-yomo/pm/middleware/logging/pm_logrus#SubscriptionInterceptor) | Emit an informative logrus log when subscription processing finish       |
+| [Logging - Slog](https://pkg.go.dev/github.com/k-yomo/pm/middleware/logging/pm_slog#SubscriptionInterceptor)     | Emit an informative slog log when subscription processing finish         |
 | [Recovery](https://pkg.go.dev/github.com/k-yomo/pm/middleware#SubscriptionInterceptor)                | Gracefully recover from panics and prints the stack trace when subscribe |
 
 #### Custom Middleware
