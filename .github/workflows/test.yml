@@ -22,8 +22,8 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         id: go
         with:
           go-version-file: 'go.mod'
@@ -36,7 +36,7 @@ jobs:
           DATASTORE_EMULATOR_HOST: localhost:8081
           REDIS_URL: localhost:6379
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5.5.1
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.out
